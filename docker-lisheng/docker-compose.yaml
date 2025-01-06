@@ -1,21 +1,17 @@
 version: '3.1'
 services:
-  wukongim:  # 唐僧叨叨通讯服务（悟空IM）
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:v2
+  wukongim:  # 悟空IM通讯服务
+    image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:latest
     restart: always
     ports:
-      # - "5001:5001" # http api端口（业务端调用，仅限内网开放）
-      - "5100:5100"  # tcp长连接端口（外网开放）
-      - "5200:5200" # websocket端口（外网开放）
-      - "5300:5300" # 监控端口
+      - "5100:5100"
+      - "5200:5200"
+      - "5300:5300"
     volumes:
-      - ./wukongim:/root/wukongim
-    env_file:
-      - .env
-    environment:
-      - WK_EXTERNAL_IP=${EXTERNAL_IP}
-  lishengserver:  # 唐僧叨叨的业务服务
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoserver:v1.5
+      - ./configs/wk.yaml:/root/wukongim/wk.yaml
+      - ./logs/wk:/root/wukongim/logs
+  tangsengdaodaoserver:  # 唐僧叨叨的业务服务
+    image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoserver:latest
     restart: always
     command: "api"
     healthcheck:
@@ -30,32 +26,17 @@ services:
     ports:
       - "8090:8090"
     volumes:
-      - ./lisheng:/home/tsdddata
-      - ./lisheng/configs:/home/configs  # 如果需要使用yaml配置，在当前目录下创建tsdd/configs目录，并新建tsdd.yaml配置文件（注意：配置生效优先级environment高于配置文件，如果你配置了environment将覆盖tsdd.yaml的配置项）
-    env_file:
-      - .env
-    environment:
-      - TS_DB_MYSQLADDR=root:${MYSQL_ROOT_PASSWORD}@tcp(mysql)/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=true&loc=Local
-      - TS_EXTERNAL_IP=${EXTERNAL_IP}
-      - TS_FILESERVICE=${TS_FILESERVICE}
-      - TS_MINIO_ACCESSKEYID=${MINIO_ROOT_USER}
-      - TS_MINIO_SECRETACCESSKEY=${MINIO_ROOT_PASSWORD}
-  lishengweb:  # 唐僧叨叨的web服务
+      - ./configs/tsdd.yaml:/home/configs/tsdd.yaml
+      - ./logs/tsdd:/home/logs
+  tangsengdaodaoweb:  # 唐僧叨叨的web服务
     image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoweb:latest
     restart: always
     environment:
-      - API_URL=http://lishengserver:8090/
+      - API_URL
     ports:
-      - "82:80"
-  lishengmanager:  # 唐僧叨叨的后台管理系统
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaomanager:latest
-    restart: always
-    environment:
-      - API_URL=http://lishengserver:8090/
-    ports:
-      - "83:80"
+      - "82:80" 
   minio: # minio文件管理服务
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/minio:RELEASE.2023-07-18T17-49-40Z # minio/minio:RELEASE.2023-07-18T17-49-40Z
+    image: minio/minio:latest # use a remote image
     expose:
       - "9000"
       - "9001"
@@ -64,28 +45,30 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_ROOT_USER
+      - MINIO_ROOT_PASSWORD
+      - MINIO_SERVER_URL
+      - MINIO_BROWSER_REDIRECT_URL
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
       timeout: 20s
       retries: 3
     volumes:
-      - ./miniodata:/data
+      - ./miniodata:/data    
   mysql:  # mysql数据库
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/mysql:8.0.33 # mysql:8.0.33
+    image: mysql:latest
     command: --default-authentication-plugin=mysql_native_password
     healthcheck:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-    volumes:
-      - ./mysqldata:/var/lib/mysql
     environment:
       - TZ=Asia/Shanghai
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+    volumes:
+      - ./mysqldata:/var/lib/mysql                    
   redis:  # redis
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/redis:7.2.3 # redis:7.2.3
+    image: redis
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -93,6 +76,6 @@ services:
       timeout: 3s
       retries: 30
   adminer:  # mysql web管理工具 调试用，为了安全生产不要打开
-    image: registry.cn-shanghai.aliyuncs.com/wukongim/adminer:latest # adminer:latest
-    ports:
-      - 8306:8080
+   image: adminer:latest
+   ports:
+     - 8306:8080     
