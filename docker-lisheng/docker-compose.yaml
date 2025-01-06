@@ -30,8 +30,8 @@ services:
     ports:
       - "8090:8090"
     volumes:
-      - ./tsdd:/home/tsdddata
-      - ./tsdd/configs:/home/configs  # 如果需要使用yaml配置，在当前目录下创建tsdd/configs目录，并新建tsdd.yaml配置文件（注意：配置生效优先级environment高于配置文件，如果你配置了environment将覆盖tsdd.yaml的配置项）
+      - ./lisheng:/home/tsdddata
+      - ./lisheng/configs:/home/configs  # 如果需要使用yaml配置，在当前目录下创建tsdd/configs目录，并新建tsdd.yaml配置文件（注意：配置生效优先级environment高于配置文件，如果你配置了environment将覆盖tsdd.yaml的配置项）
     env_file:
       - .env
     environment:
