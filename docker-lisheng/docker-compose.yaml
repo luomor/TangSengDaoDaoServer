@@ -14,7 +14,7 @@ services:
       - .env
     environment:
       - WK_EXTERNAL_IP=${EXTERNAL_IP}
-  tangsengdaodaoserver:  # 唐僧叨叨的业务服务
+  lishengserver:  # 唐僧叨叨的业务服务
     image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoserver:v1.5
     restart: always
     command: "api"
@@ -40,18 +40,18 @@ services:
       - TS_FILESERVICE=${TS_FILESERVICE}
       - TS_MINIO_ACCESSKEYID=${MINIO_ROOT_USER}
       - TS_MINIO_SECRETACCESSKEY=${MINIO_ROOT_PASSWORD}
-  tangsengdaodaoweb:  # 唐僧叨叨的web服务
+  lishengweb:  # 唐僧叨叨的web服务
     image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaoweb:latest
     restart: always
     environment:
-      - API_URL=http://tangsengdaodaoserver:8090/
+      - API_URL=http://lishengserver:8090/
     ports:
       - "82:80"
-  tangsengdaodaomanager:  # 唐僧叨叨的后台管理系统
+  lishengmanager:  # 唐僧叨叨的后台管理系统
     image: registry.cn-shanghai.aliyuncs.com/wukongim/tangsengdaodaomanager:latest
     restart: always
     environment:
-      - API_URL=http://tangsengdaodaoserver:8090/
+      - API_URL=http://lishengserver:8090/
     ports:
       - "83:80"
   minio: # minio文件管理服务
